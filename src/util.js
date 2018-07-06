@@ -1,9 +1,10 @@
 const { SPECIAL, TOKENS, REGEXS } = require('./constants')
 
 function getRegExp (str, index) {
-  return REGEXS.find(({ re }) =>
-    re.test(str.charAt(index))
-  )
+  let char = str.charAt(index)
+  let tok = REGEXS.find(({ re }) => re.test(char))
+  tok.char = char
+  return tok
 }
 
 function isSpecial (char) {

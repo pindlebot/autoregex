@@ -41,6 +41,9 @@ class Range {
       }
       return ''
     }
+    if (!lower) {
+      return '*'
+    }
     if (lower === upper) {
       return `{${lower}}`
     }
@@ -73,6 +76,10 @@ class Token {
 
   get first () {
     return this._tokens[0]
+  }
+
+  get last () {
+    return this._tokens[this._tokens.length - 1]
   }
 
   set token (tok) {
@@ -168,21 +175,24 @@ class Autoregex {
       return
     }
 
+    let char = str.charAt(index)
+    let special = isSpecial(char)
+    let prevCharSpecial = isSpecial(prev.last.char)
+
+    if (index !== prev.index) {
+      if (special || prevCharSpecial) {
+        this.tokens.push([tok], [1, 1], index)
+        return
+      }
+      this.tokens.increment(index)
+    }
+
     if (prev.tokens.includes(tok)) {
       // we're on a different character, so extend the range
       if (index !== prev.index) {
         this.tokens.increment(index)
       }
       return
-    }
-
-    if (index !== prev.index) {
-      let char = str.charAt(index)
-      let special = isSpecial(char)
-      if (special) {
-        this.tokens.push([tok], [1, 1], index)
-        return
-      }
     }
     
     this.tokens.set(tok)
