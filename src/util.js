@@ -10,7 +10,8 @@ function isSpecial (char) {
   return SPECIAL.includes(char)
 }
 
-function extract ({ tok }) {
+function extract (value) {
+  let { tok } = value
   const RE = /(?<=\[)(.*)(?=\])/
   return RE.test(tok) ? tok.match(RE)[0] : tok
 }

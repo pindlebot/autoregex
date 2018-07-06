@@ -35,8 +35,11 @@ class Range {
   toString() {
     let lower = this._lower
     let upper = this._upper
-    if (!lower && uppper === 1) {
-      return '?'
+    if (upper === 1) {
+      if (!lower) {
+        return '?'
+      }
+      return ''
     }
     if (lower === upper) {
       return `{${lower}}`
@@ -87,8 +90,8 @@ class Token {
   value () {
     let token = this._tokens.map(extract).join('')
     console.log(this._tokens)
-    token = `[${token}]${this._range.toString()}`
-    return token
+    let range = this._range.toString()
+    return `[${token}]${range}`
   }
 }
 
@@ -119,7 +122,11 @@ class Tokens {
 
   value () {
     console.log(this._tokens)
-    return new RegExp(this._tokens.map(token => token.value()).join(''))
+    return new RegExp(
+      '^' +
+      this._tokens.map(token => token.value()).join('') +
+      '$'
+    )
   }
 }
 
@@ -131,7 +138,7 @@ class Autoregex {
     this.tokens = new Tokens()
   }
 
-  test () {
+  test (fixtureNot) {
     let failed = []
     let succeeded 
     let re = this.tokens.value()
@@ -140,44 +147,52 @@ class Autoregex {
       acc[result ? 'succeeded' : 'failed'].push(str)
       return acc
     }, { failed: [], succeeded: [] })
-    return { results, re }
+    let shouldFail = fixtureNot.reduce((acc, str) => {
+      let result = re.test(str)
+      acc[result ? 'failed' : 'succeeded'].push(str)
+      return acc
+    }, { failed: [], succeeded: [] })
+    return { results, re, shouldFail }
   }
+
+  tokenizeString (str, index) {
+    let prev = this.tokens.last()
+    let tok = getRegExp(str, index)
+    if (typeof tok === 'undefined') {
+      console.log(`${str.charAt(index)} not found.`)
+      return
+    }
+    // add the first token
+    if (!prev) {
+      this.tokens.push([tok], [1, 1], index)
+      return
+    }
+
+    if (prev.tokens.includes(tok)) {
+      // we're on a different character, so extend the range
+      if (index !== prev.index) {
+        this.tokens.increment(index)
+      }
+      return
+    }
+
+    if (index !== prev.index) {
+      let char = str.charAt(index)
+      let special = isSpecial(char)
+      if (special) {
+        this.tokens.push([tok], [1, 1], index)
+        return
+      }
+    }
+    
+    this.tokens.set(tok)
+  }
+
   tokenize () {
     let index = 0
     while (index < this.size) {
       this.dataset.filter(str => str.length > index)
-        .forEach(str => {
-        let prev = this.tokens.last()
-        let tok = getRegExp(str, index)
-        // add the first token
-        if (!prev) {
-          this.tokens.push([tok], [1, 1], index)
-          return
-        }
-  
-        if (index !== prev.index) {
-          // we're on a different character and the token differs
-          // therfore add a new token
-          let char = str.charAt(index)
-          let special = isSpecial(char)
-          console.log({ char, special })
-          if (special) {
-            console.log('new')
-            this.tokens.push([tok], [1, 1], index)
-            return
-          }
-        } 
-
-        if (prev.tokens.includes(tok)) {
-          // we're on a different character, so extend the range
-          if (index !== prev.index) {
-            this.tokens.increment(index)
-          }
-          return
-        }
-  
-        this.tokens.set(tok)
-      })
+        .forEach(str => this.tokenizeString(str, index))
   
       if (this.dataset.some(str => str.length <= index)) {
         let [lower, upper] = this.tokens.last().range.range
