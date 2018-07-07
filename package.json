@@ -1,4 +1,14 @@
 {
   "name": "autoregex",
-  "dependencies": {}
+  "dependencies": {
+    "uuid": "^3.3.2"
+  },
+  "scripts": {
+    "lint": "standard src/*.js --fix | snazzy"
+  },
+  "devDependencies": {
+    "eslint": "^5.0.1",
+    "snazzy": "^7.1.1",
+    "standard": "^11.0.1"
+  }
 }

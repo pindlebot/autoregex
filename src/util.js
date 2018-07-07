@@ -4,6 +4,9 @@ function getRegExp (str, index) {
   let char = str.charAt(index)
   let tok = REGEXS.find(({ re }) => re.test(char))
   tok.char = char
+  if (/[A-Za-z]/.test(char)) {
+    tok.parent = '[A-Za-z]'
+  }
   return tok
 }
 
