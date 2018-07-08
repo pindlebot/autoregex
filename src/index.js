@@ -1,90 +1,152 @@
-const { isSpecial, getRegExp } = require('./util')
 const Stack = require('./Stack')
+const TokenSet = require('./TokenSet')
+const Token = require('./Token')
+
+const createTokenMap = dataset => {
+  return new Map(
+    dataset.map((string, index) => ([
+      string, {
+        tokens: new Map(
+          string.split('').map((char, i) => ([
+            i, Token.create(char)
+          ]))
+        ),
+        string: string,
+        index: index
+      }
+    ]))
+  )
+}
+
+const createMatrix = (dataset) => {
+  let size = dataset.sort((a, b) => b.length - a.length)[0].length
+  let matrix = Array.from(new Array(size).keys()).map(i =>
+    dataset.map(str => str.charAt(i))
+  )
+  return matrix.map(column => column.map(char =>
+    Token.create(char)
+  ))
+}
+
+class TokenMap {
+  constructor (dataset) {
+    this._dataset = dataset
+    this._map = createTokenMap(dataset)
+    // this._matrix = createMatrix(dataset)
+    console.log(this)
+  }
+
+  getTokenForString (string, index) {
+    return this._map.get(string).tokens.get(index)
+  }
+
+  getTokensForSubstring (string, index) {
+    let { tokens } = this._map.get(string)
+    return Array.from(tokens.entries()).slice(0, index)
+  }
+
+  hasRepeats (string, index, tok, subset) {
+    let substring = string.substring(0, index)
+    let subregex = this.getTokensForSubstring(string, index)
+    let hasRepeats = subset
+      .every(str =>
+        str.substring(0, index) === substring
+        // subregex.every((token, i) => fixture.get(str.charAt(i)) === token)
+      )
+    return hasRepeats && !this._dataset.every(str => str.charAt(index) === tok.char)
+  }
+}
 
 class Autoregex {
   constructor (dataset) {
+    dataset = Array.from(new Set(dataset))
     this.dataset = dataset
+    this.tokenMap = new TokenMap(dataset)
     this.columns = []
     this.size = dataset.sort((a, b) => b.length - a.length)[0].length
     this.stack = new Stack()
   }
 
-  test (fixtureNot) {
+  test () {
     let re = this.stack.value()
-    let results = this.dataset.reduce((acc, str) => {
+    let results = this.dataset.reduce((acc, str, index) => {
       let result = re.test(str)
-      acc[result ? 'succeeded' : 'failed'].push(str)
+      acc.push({
+        string: str,
+        index,
+        result
+      })
       return acc
-    }, { failed: [], succeeded: [] })
-    let shouldFail = fixtureNot.reduce((acc, str) => {
-      let result = re.test(str)
-      acc[result ? 'failed' : 'succeeded'].push(str)
-      return acc
-    }, { failed: [], succeeded: [] })
-    return { results, re, shouldFail }
+    }, [])
+    return { results, re }
   }
 
-  tokenizeString (str, index) {
-    let prev = this.stack.last()
-    let tok = getRegExp(str, index)
-    console.log({ tok, index })
-    if (typeof tok === 'undefined') {
-      console.log(`${str.charAt(index)} not found.`)
-      return
-    }
+  tokenizeString (string, [x, index], subset) {
+    let tok = this.tokenMap.getTokenForString(string, index)
+    let lastTokenSet = this.stack.getLastTokenSet()
     // add the first token
-    if (!prev) {
-      this.stack.push([tok], [1, 1], index)
+    if (!lastTokenSet) {
+      this.stack.push(new TokenSet(tok, index))
       return
     }
 
-    let char = str.charAt(index)
-    let special = isSpecial(char)
-    let prevCharSpecial = isSpecial(prev.last.char)
+    if (lastTokenSet.includes(tok) || lastTokenSet.includes(tok.parent)) {
+      // we're on a different character, so extend the range
+      if (index !== lastTokenSet.index) {
+        this.stack.incrementRange(index)
+      }
+      return
+    }
 
-    if (index !== prev.index) {
-      if (special || prevCharSpecial) {
-        this.stack.push([tok], [1, 1], index)
+    if (index !== lastTokenSet.index) {
+      if (
+        tok.special ||
+        lastTokenSet.last.special ||
+        this.tokenMap.hasRepeats(string, index, tok, subset)
+      ) {
+        this.stack.push(new TokenSet(tok, index))
         return
       }
-      this.stack.increment(index)
+      this.stack.incrementRange(index)
     }
 
-    if (prev.tokens.includes(tok)) {
-      // we're on a different character, so extend the range
-      if (index !== prev.index) {
-        this.stack.increment(index)
-      }
+    if (this.dataset.every(str => str.charAt(index) === tok.char)) {
+      this.stack.addToken(tok)
       return
     }
-    
-    this.stack.set(tok, index)
-    /*if (
+
+    if (
       tok.parent &&
-      prev.last.parent &&
-      tok.parent === prev.last.parent &&
-      !this.dataset.some(str => str.charAt(index) !== tok.char)
+      this.dataset.some(str => str.charAt(index) !== tok.char)
     ) {
-      prev.collapse(tok)
+      lastTokenSet.reduceTokens(tok, index)
     } else {
-      this.stack.set(tok)
-    }*/
+      this.stack.addToken(tok, index)
+    }
   }
 
   tokenize () {
-    let index = 0
-    while (index < this.size) {
-      this.dataset.filter(str => str.length > index)
-        .forEach(str => this.tokenizeString(str, index))
+    let y = 0
+    while (y < this.size) {
+      let subset = this.dataset
+        .filter(str => str.length > y)
 
-      if (this.dataset.some(str => str.length <= index)) {
-        let lower = this.stack.last().range.lower
-        this.stack.last().range.lower = Math.max(lower - 1, 0)
+      subset.forEach((str, x) =>
+        this.tokenizeString(str, [x, y], subset)
+      )
+
+      if (this.dataset.some(str => str.length <= y)) {
+        let lower = this.stack.getLastTokenSet().range.lower
+        this.stack.getLastTokenSet().range.lower = Math.max(lower - 1, 0)
       }
 
-      index++
+      y++
     }
     return this
+  }
+
+  value () {
+    return this.stack.value()
   }
 }
 

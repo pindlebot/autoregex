@@ -1,0 +1,4 @@
+{ 
+  "presets": ["babel-preset-parcel"],
+  "plugins": ["transform-class-properties"] 
+}

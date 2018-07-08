@@ -44,6 +44,9 @@ class Range {
     if (lower === upper) {
       return `{${lower}}`
     }
+    if (upper > 6 && (upper / 2) > lower) {
+      return '*'
+    }
     return `{${lower},${upper}}`
   }
 }
