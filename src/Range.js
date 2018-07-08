@@ -38,9 +38,6 @@ class Range {
       }
       return ''
     }
-    if (!lower) {
-      return '*'
-    }
     if (lower === upper) {
       return `{${lower}}`
     }

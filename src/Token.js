@@ -1,65 +1,50 @@
 
-const { TOKENS } = require('./fixtures')
+const { TOKENS, SPECIAL } = require('./fixtures')
 
-const SPECIAL = [
-  '.',
-  '@',
-  '#',
-  '$',
-  '%',
-  '^',
-  '&',
-  '*',
-  '(',
-  ')',
-  '~',
-  `'`,
-  '`',
-  '"',
-  '[',
-  ']',
-  '-',
-  '\\',
-  '/'
-]
-
-const ALL_TOKENS = TOKENS.map((tok, index) => ({ tok, re: new RegExp(tok), index }))
+const ALL_TOKENS = TOKENS.map((tok, index) => ([tok, new RegExp(tok)]))
 
 const getParent = (token) => {
   if (!token.char) return null
   let code = token.char.charCodeAt(0)
   if (code > 96 && code < 124) {
-    return Token.createFromRegEx('[A-Za-z]', token.char)
+    let tok = new Token('[A-Za-z]')
+    tok.isRange = true
+    return tok
   }
   if (code > 48 && code < 58) {
-    return Token.createFromRegEx('\\d')
+    let tok = new Token('\\d')
+    return tok
   }
   return null
 }
 
 class Token {
-  constructor ({ re, tok, index }, char) {
-    console.log({ re, tok, index, char })
-    this._char = char
-    this.re = re
+  constructor (tok, re) {
+    this.re = re || new RegExp(tok)
     this.tok = tok
-    this.index = index
-    this.special = index > 28
-    this._parent = getParent(this)
   }
 
   set invariant (invariant) {
     this._invariant = invariant
-    return this
   }
 
   get invariant () {
     return this._invariant
   }
 
+  set special (special) {
+    this._special = special
+  }
+
+  get special () {
+    return this._special
+  }
+
   set char (char) {
+    if (SPECIAL.includes(char)) {
+      this.special = true
+    }
     this._char = char
-    return this
   }
 
   get char () {
@@ -67,22 +52,36 @@ class Token {
   }
 
   set parent (parent) {
+    parent.hasChildren = true
     this._parent = parent
-    return this
+  }
+
+  set hasChildren (children) {
+    this._hasChildren = children
+  }
+
+  get hasChildren () {
+    return this._hasChildren
   }
 
   get parent () {
     return this._parent
   }
 
-  static createFromRegEx (re, char) {
-    let token = ALL_TOKENS.find(tok => tok.tok === re)
-    return new Token(token, char)
+  get isRange () {
+    return this._isRange
+  }
+
+  set isRange (isRange) {
+    this._isRange = isRange
   }
 
   static create (char) {
-    let token = ALL_TOKENS.find(tok => tok.re.test(char))
-    return new Token(token, char)
+    let tok = ALL_TOKENS.find(([tok, re]) => re.test(char))
+    let token = new Token(...tok)
+    token.char = char
+    token.parent = getParent({ char })
+    return token
   }
 }
 

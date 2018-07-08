@@ -72,4 +72,27 @@ const TOKENS = [
   '\\/'
 ]
 
+const SPECIAL = [
+  '.',
+  '@',
+  '#',
+  '$',
+  '%',
+  '^',
+  '&',
+  '*',
+  '(',
+  ')',
+  '~',
+  `'`,
+  '`',
+  '"',
+  '[',
+  ']',
+  '-',
+  '\\',
+  '/'
+]
+
+module.exports.SPECIAL = SPECIAL
 module.exports.TOKENS = TOKENS

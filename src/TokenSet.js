@@ -54,7 +54,6 @@ class TokenSet {
   }
 
   includes (token) {
-    // return this._tokens.has(token)
     if (!token) return false
     return [...this._tokens].some(({ tok }) => tok === token.tok)
   }
@@ -63,26 +62,48 @@ class TokenSet {
     this._tokens.delete(token)
   }
 
-  reduceTokens (tok) {
-    let { parent } = tok
+  reduceInt (tok, column) {
+    let nums = column.map(t => t.char)
+    let min = Math.min(...nums)
+    let max = Math.max(...nums)
+    if ((max - min) < 3) {
+      let token = new Token(`[${min}-${max}]`)
+      token.char = tok.char
+      token.parent = new Token(`\\d`)
+      token.isRange = true
+      this.token = token
+      return
+    }
+    this.token = tok.parent
+  }
+
+  reduceTokens (tok, column) {
+    let { parent, char } = tok
     if (this.includes(parent)) {
       return
     }
+  
     Array.from(this._tokens)
       .filter(token => token.parent && token.parent.tok === parent.tok)
       .forEach(token => {
         this.remove(token)
       })
+  
+    if (column.every(t => !isNaN(t.char))) {
+      this.reduceInt(tok, column)
+      return
+    }
+  
     this.token = tok.parent
   }
 
   value () {
-    console.log(this)
-    let token = Array.from(this._tokens).map(extract).join('')
+    let tokens = Array.from(this._tokens)
+    let token = tokens.map(extract).join('')
     let range = this._range.toString(this._tokens)
     if (this.length === 1) {
       if (this.range.upper === 1 && this.range.lower === 1) {
-        if (!token.includes('A-Za-z')) {
+        if (!tokens.some(tok => tok.isRange)) {
           return token
         }
       }
