@@ -1,10 +1,9 @@
-
 const { TOKENS, SPECIAL } = require('./fixtures')
 
-const getFlag = tok => tok.charAt(2) === 'u' ? 'u' : ''
-
-const ALL_TOKENS = TOKENS.map((tok, index) => Array.isArray(tok)
-  ? ([ tok, new RegExp(...tok) ]) : ([ tok, new RegExp(tok, getFlag(tok)) ]))
+const ALL_TOKENS = TOKENS.map((tok, index) =>
+  new RegExp(...(Array.isArray(tok) ? tok : [tok]))
+)
+window.__tokens__ = ALL_TOKENS
 
 const getParent = (token) => {
   if (!token.char) return null
@@ -13,61 +12,53 @@ const getParent = (token) => {
     (code >= 97 && code <= 122) ||
     (code >= 65 && code <= 90)
   ) {
-    let tok = new Token('[A-Za-z]')
-    tok.index = token.index
+    let tok = new Token('[A-Za-z]', token.displacement)
     return tok
   }
   if (code >= 48 && code <= 57) {
-    let tok = new Token('\\d')
-    tok.index = token.index
+    let tok = new Token('\\d', token.displacement)
     return tok
   }
+  // return new Token('.', token.index)
   return null
 }
 
 class Token {
-  constructor (tok, re, index) {
-    this.re = re || new RegExp(tok)
-    this.tok = tok
-    this.isRange = tok.startsWith('[') && tok.endsWith(']')
-    this._index = index
-  }
-
-  getType () {
-    switch (true) {
-      case this.isNumber():
-        return 'number'
-      case this.parent && this.parent.tok === '[A-Za-z]':
-        return 'letter'
-      case this.special:
-        return 'special'
-      default:
-        return 'unknown'
-    }
-  }
-
-  set invariant (invariant) {
-    this._invariant = invariant
-  }
-
-  get invariant () {
-    return this._invariant
+  constructor (regex, displacement) {
+    let re = typeof regex === 'string'
+      ? new RegExp(regex)
+      : regex
+    let tok = typeof regex === 'string'
+      ? regex
+      : regex.toString().split('/')[1]
+    this.regex = re
+    this.token = tok
+    this._isRange = tok.startsWith('[') && tok.endsWith(']')
+    this._displacement = displacement
   }
 
   set special (special) {
     this._special = special
   }
 
-  set index (index) {
-    this._index = index
+  set displacement (displacement) {
+    this._displacement = displacement
   }
 
-  get index () {
-    return this._index
+  get displacement () {
+    return this._displacement
   }
 
-  get special () {
+  isSpecialCharacter () {
     return this._special
+  }
+
+  isRange () {
+    return this._isRange
+  }
+
+  isWildcard () {
+    return this.token === '.'
   }
 
   set char (char) {
@@ -85,14 +76,6 @@ class Token {
     this._parent = parent
   }
 
-  set hasChildren (children) {
-    this._hasChildren = children
-  }
-
-  get hasChildren () {
-    return this._hasChildren
-  }
-
   get parent () {
     return this._parent
   }
@@ -101,11 +84,11 @@ class Token {
     return !isNaN(this._char)
   }
 
-  static create (char, index) {
-    let tok = ALL_TOKENS.find(([tok, re]) => re.test(char))
-    let token = new Token(...tok, index)
+  static create (char, displacement) {
+    let re = ALL_TOKENS.find(regex => regex.test(char))
+    let token = new Token(re, displacement)
     token.char = char
-    token.parent = getParent({ char, index })
+    token.parent = getParent({ char, displacement })
     return token
   }
 }

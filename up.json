@@ -1,0 +1,10 @@
+{
+  "name": "autoregex",
+  "type": "static",
+  "static": {
+    "dir": "dist"
+  },
+  "hooks": {
+    "build": "yarn build"
+  }
+}

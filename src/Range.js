@@ -35,7 +35,6 @@ class Range {
   }
 
   decrement () {
-    console.log('decrement', this)
     this._lower = Math.max(this._lower - 1, 0)
   }
 

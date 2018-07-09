@@ -2,9 +2,9 @@ const Range = require('./Range')
 const Token = require('./Token')
 
 function extract (value) {
-  let { tok } = value
+  let { token } = value
   const RE = /(?<=\[)(.*)(?=\])/
-  return RE.test(tok) ? tok.match(RE)[0] : tok
+  return RE.test(token) ? token.match(RE)[0] : token
 }
 
 class Layer {
@@ -13,7 +13,7 @@ class Layer {
     tokens = tokens.map((tok, i) => tok instanceof Token ? tok : Token.create(tok, i))
     this._tokens = new Set(tokens)
     this._range = new Range()
-    this._index = tokens[0].index
+    this._index = tokens[0].displacement
   }
 
   get range () {
@@ -54,7 +54,12 @@ class Layer {
 
   includes (token) {
     if (!token) return false
-    return Array.from(this._tokens).some(({ tok }) => tok === token.tok || tok === '.')
+    return Array.from(this._tokens)
+      .some((tok) => tok.token === token.token || tok.token === '.')
+  }
+
+  has (token) {
+    return this.includes(token)
   }
 
   remove (token) {
@@ -66,9 +71,8 @@ class Layer {
     let nums = this.column.filter(t => !isNaN(1)).map(t => parseInt(t.char))
     let min = Math.min(...nums)
     let max = Math.max(...nums)
-    console.log({ min, max, tok, column: this.column })
     if ((max - min) < 3) {
-      let token = new Token(`[${min}-${max}]`)
+      let token = new Token(`[${min}-${max}]`, tok.displacement)
       token.char = tok.char
       token.parent = new Token(`\\d`)
       this.add(token)
@@ -79,7 +83,7 @@ class Layer {
 
   collapse (parent) {
     Array.from(this._tokens)
-      .filter(token => token.parent && token.parent.tok === parent.tok)
+      .filter(token => token.parent && token.parent.token === parent.token)
       .forEach(token => {
         console.warn(`Removing ${token.tok}`)
         this.remove(token)
@@ -87,26 +91,21 @@ class Layer {
   }
 
   addToken (token) {
-    if (token.index !== this.index) {
+    if (token.displacement !== this.index) {
       //  we're on a new column, so extend the range
       this.range.increment()
-      this._index = token.index
+      this._index = token.displacement
     }
     const { parent } = token
 
     if (this.includes(token) || this.includes(parent)) {
-      console.warn('Not adding ' + token.tok)
+      console.warn('Not adding ' + token.token)
       return
     }
 
     if (parent) {
       this.collapse(parent)
-
-      // if (token.isNumber()) {
-      //  this.addNumberToken(token)
-      //  return
-      // }
-      parent.index = token.index
+      parent.index = token.displacement
       this.add(parent)
       return
     }
@@ -119,8 +118,8 @@ class Layer {
     let token = tokens.map(extract).join('')
     let range = this._range.toString(this._tokens)
     if (this.length === 1) {
-      if (!tokens.some(tok => tok.isRange)) {
-        if (tokens[0].tok === '.') {
+      if (!tokens.some(tok => tok.isRange())) {
+        if (tokens[0].token === '.') {
           return token
         }
         if (this.range.upper === 1 && this.range.lower === 1) {

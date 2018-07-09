@@ -8,26 +8,18 @@ class Stack {
     this.matrix = matrix
   }
 
-  get head () {
+  getCurrentLayer () {
     return this._stack[this._stack.length - 1]
   }
 
-  addToken (token) {
-    this.head.addToken(token)
-    return this
-  }
-
-  push (layer) {
-    this._stack.push(layer)
-  }
-
-  splitLayer (token) {
-    let layer = new Layer(token)
-    this.push(layer)
+  push (maybeLayer) {
+    this._stack.push(
+      maybeLayer instanceof Layer ? maybeLayer : new Layer(maybeLayer)
+    )
   }
 
   value () {
-    // console.table(this._stack.map(layer => Array.from(layer.tokens).map(t => t.tok)))
+    console.log(this)
     let re = this._stack.map(layer => layer.value()).join('')
     return new RegExp(`^${re}$`)
   }

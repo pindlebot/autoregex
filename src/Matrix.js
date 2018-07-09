@@ -44,7 +44,7 @@ class Matrix {
 
   isUniform (x) {
     return x > -1 && this._matrix[x].every(token =>
-      token && token.tok === this.first(x).tok
+      token && token.token === this.first(x).token
     )
   }
 
@@ -67,7 +67,7 @@ class Matrix {
     return this.isUniformByChar(x)
   }
 
-  isMessy (x) {
+  isHeterogeneous (x) {
     return this._matrix[x]
       .filter(tok => tok !== null && !tok.parent)
       .reduce((acc, val) => {

@@ -1,16 +1,23 @@
 {
   "name": "autoregex",
   "dependencies": {
-    "classnames": "^2.2.6",
-    "draft-js-compact": "^0.0.4",
-    "uuid": "^3.3.2"
   },
   "scripts": {
     "lint": "standard src/*.js --fix | snazzy",
     "dev": "parcel playground/index.html",
-    "test": "jest"
+    "build": "parcel build playground/index.html --public-url \"/staging/\"",
+    "test": "jest",
+    "clean": "rimraf dist && rimraf .cache"
   },
+  "standard": {
+    "env": [
+      "jest"
+    ]
+  }, 
   "devDependencies": {
+    "uuid": "^3.3.2",
+    "classnames": "^2.2.6",
+    "draft-js-compact": "^0.0.4",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-parcel": "^0.0.11",
     "draft-js": "^0.10.5",
@@ -21,6 +28,7 @@
     "parcel-bundler": "^1.9.4",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
+    "rimraf": "^2.6.2",
     "snazzy": "^7.1.1",
     "standard": "^11.0.1"
   }

@@ -8,8 +8,6 @@ class Autoregex {
     dataset = Array.from(new Set(dataset))
     this.dataset = dataset
     this.tokens = new Matrix(dataset)
-    this.columns = []
-    this.size = dataset.sort((a, b) => b.length - a.length)[0].length
     this.stack = new Stack(this.tokens)
   }
 
@@ -28,51 +26,49 @@ class Autoregex {
   }
 
   tokenizeString (token) {
-    let head = this.stack.head
+    let currentLayer = this.stack.getCurrentLayer()
 
-    if (!head) {
-      this.stack.splitLayer(this.tokens.isMessy(token.index) ? new Token('.', new RegExp('.'), token.index) : token)
+    if (!currentLayer) {
+      this.stack.push(token)
       return
     }  
 
-    if (token.index !== head.index) {
-      if (head.last.tok === '.') {
-        this.stack.splitLayer(token)
-        return
-      }
-      if (this.tokens.isMessy(token.index)) {
-        this.stack.splitLayer(new Token('.', new RegExp('.'), token.index))
-        return
-      }
-      if (head.includes(token) || head.includes(token.parent)) {
-        head.range.increment()
-        head.index = token.index
-        console.warn(`increment range to [${head.range.lower}, ${head.range.upper}]`)
+    if (token.displacement !== currentLayer.index) {
+      // if (currentLayer.last.tok === '.') {
+      //  this.stack.splitLayer(token)
+      //  return
+      // }
+      // if (this.tokens.isHeterogeneous(token.displacement)) {
+      //  this.stack.push(new Token('.', new RegExp('.'), token.displacement))
+      //  return
+      // }
+      if (currentLayer.includes(token) || currentLayer.includes(token.parent)) {
+        currentLayer.range.increment()
+        currentLayer.index = token.displacement
         return
       }
       if (
-        token.special ||
-        head.last.special ||
-        this.tokens.isUniform(token.index) ||
-        this.tokens.isUniformByChar(token.index - 1)
+        (token.isSpecialCharacter() || currentLayer.last.isSpecialCharacter()) ||
+        this.tokens.isUniform(token.displacement) ||
+        this.tokens.isUniformByChar(token.displacement - 1)
       ) {
-        this.stack.splitLayer(token)
+        this.stack.push(token)
         return
       }
     }
 
-    this.stack.head.addToken(token)
+    this.stack.getCurrentLayer().addToken(token)
   }
   
   adjustRangeIfNeeded = (column) => {
     if (column.some(tok => tok === null)) {
-      this.stack.head.range.decrement()
+      this.stack.getCurrentLayer().range.decrement()
     }
   }
 
   tokenize () {
     this.tokens.matrix.forEach(column => {
-      column.forEach((token, y) => {
+      column.forEach(token => {
         if (token) this.tokenizeString(token)
       })
       this.adjustRangeIfNeeded(column)

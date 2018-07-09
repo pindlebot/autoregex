@@ -26,7 +26,7 @@ const datasets = [{
   output: '/^[z]{2}[q]{0,3}$/'
 }, {
   input: ['g.1', 'g.2'],
-  output: '/^g[\\.\\d]{2}$/'
+  output: '/^g\\.\\d$/'
 }, {
   input: [
     '!abcdef',
@@ -34,20 +34,36 @@ const datasets = [{
     '1abcdef',
     '^'
   ],
-  output: '/^.[A-Za-z]{0,6}$/'
+  output: '/^[!\\*\\d\\^][A-Za-z]{0,6}$/'
 }, {
   input: [
     '******',
     'abcabc',
     'defdef'
   ],
-  output: '/^[\*A-Za-z]{0,6}$/'
+  output: '/^[\\*A-Za-z]{6}$/'
+}, {
+  input: [
+    'o888',
+    'o887',
+    'oh&&'
+  ],
+  output: ''
 }]
 
-it ('Autregex 1', () => {
-  datasets.forEach((dataset, i) => {
-    expect(
-      new Autoregex(datasets[i].input).tokenize().value().toString()
-    ).toMatch(datasets[i].output)
-  })  
+datasets.forEach((dataset, i) => {
+  it(`${JSON.stringify(dataset[i])}`, () => {
+    let re = new Autoregex(datasets[i].input).tokenize().value()
+    console.log(re)
+    expect(re.toString()).toMatch(datasets[i].output)
+  })
+})
+
+datasets.forEach((dataset, i) => {
+  let re = new Autoregex(datasets[i].input).tokenize().value()
+  dataset.input.forEach(string => {
+    it(`Autregex. Test: "${string}", RegEx: "${re.toString()}"`, () => {
+      expect(re.test(string)).toBe(true)
+    })
+  })
 })
