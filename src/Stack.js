@@ -1,35 +1,34 @@
-const TokenSet = require('./TokenSet')
+const Layer = require('./Layer')
+const Token = require('./Token')
 
 class Stack {
-  constructor () {
+  constructor (matrix) {
     this._stack = []
+    this._x = 0
+    this.matrix = matrix
   }
 
-  getLastTokenSet () {
+  get head () {
     return this._stack[this._stack.length - 1]
   }
 
-  addToken (value, index) {
-    this._stack[this._stack.length - 1].token = value
+  addToken (token) {
+    this.head.addToken(token)
     return this
   }
 
-  incrementRange (index) {
-    let { range } = this.getLastTokenSet()
-    this._stack[this._stack.length - 1].range = [range.lower + 1, range.upper + 1]
-    this._stack[this._stack.length - 1].index = index
+  push (layer) {
+    this._stack.push(layer)
   }
 
-  push (tokenSet) {
-    this._stack.push(
-      tokenSet
-    )
-    return this
+  splitLayer (token) {
+    let layer = new Layer(token)
+    this.push(layer)
   }
 
   value () {
-    console.log(this)
-    let re = this._stack.map(token => token.value()).join('')
+    // console.table(this._stack.map(layer => Array.from(layer.tokens).map(t => t.tok)))
+    let re = this._stack.map(layer => layer.value()).join('')
     return new RegExp(`^${re}$`)
   }
 }

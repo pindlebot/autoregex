@@ -1,72 +1,16 @@
 const Stack = require('./Stack')
-const TokenSet = require('./TokenSet')
+const Layer = require('./Layer')
 const Token = require('./Token')
-
-const createMatrix = (dataset) => {
-  let size = dataset.sort((a, b) => b.length - a.length)[0].length
-  return Array.from(new Array(size).keys()).map(i =>
-    dataset.map(str => str.charAt(i) ? str.charAt(i) : null)
-  ).map(column =>
-    column
-      .map(char => char ? Token.create(char) : null)
-  )
-}
-
-class TokenMap {
-  constructor (dataset) {
-    this._dataset = dataset
-    this._matrix = createMatrix(dataset)
-    console.log(this)
-  }
-
-  get length () {
-    return this._matrix.length
-  }
-
-  get matrix () {
-    return this._matrix
-  }
-
-  getToken (x, y) {
-    return this._matrix[x][y]
-  }
-
-  peek (x) {
-    return this._matrix[x + 1]
-  }
-
-  isUniform (x) {
-    let first = this._matrix[x][0]
-    return this._matrix[x].every(token => token && token.tok === first.tok)
-  }
-
-  isUniformByChar (x) {
-    let first = this._matrix[x][0]
-    return this._matrix[x].every(token => token && token.char === first.char)
-  }
-
-  takeUntil (x) {
-    return this._matrix.reduce((acc, val, index) => {
-      if (val && index <= x) {
-        acc.push(val)
-      }
-      return acc
-    }, [])
-  }
-
-  hasRepeats (x, y) {
-    return this.isUniform && !this.isUniformByChar(x)
-  }
-}
+const Matrix = require('./Matrix')
 
 class Autoregex {
   constructor (dataset) {
     dataset = Array.from(new Set(dataset))
     this.dataset = dataset
-    this.tokens = new TokenMap(dataset)
+    this.tokens = new Matrix(dataset)
     this.columns = []
     this.size = dataset.sort((a, b) => b.length - a.length)[0].length
-    this.stack = new Stack()
+    this.stack = new Stack(this.tokens)
   }
 
   test () {
@@ -83,59 +27,55 @@ class Autoregex {
     return { results, re }
   }
 
-  tokenizeString (tok, [x, y]) {
-    let lastTokenSet = this.stack.getLastTokenSet()
-    // add the first token
-    if (!lastTokenSet) {
-      this.stack.push(new TokenSet(tok, x))
-      return
-    }
+  tokenizeString (token) {
+    let head = this.stack.head
 
-    if (lastTokenSet.includes(tok) || lastTokenSet.includes(tok.parent)) {
-      // we're on a different character, so extend the range
-      if (x !== lastTokenSet.index) {
-        this.stack.incrementRange(x)
-      }
+    if (!head) {
+      this.stack.splitLayer(this.tokens.isMessy(token.index) ? new Token('.', new RegExp('.'), token.index) : token)
       return
-    }
+    }  
 
-    if (x !== lastTokenSet.index) {
-      if (
-        tok.special ||
-        lastTokenSet.last.special ||
-        this.tokens.hasRepeats(x, y)
-      ) {
-        this.stack.push(new TokenSet(tok, x))
+    if (token.index !== head.index) {
+      if (head.last.tok === '.') {
+        this.stack.splitLayer(token)
         return
       }
-      this.stack.incrementRange(x)
+      if (this.tokens.isMessy(token.index)) {
+        this.stack.splitLayer(new Token('.', new RegExp('.'), token.index))
+        return
+      }
+      if (head.includes(token) || head.includes(token.parent)) {
+        head.range.increment()
+        head.index = token.index
+        console.warn(`increment range to [${head.range.lower}, ${head.range.upper}]`)
+        return
+      }
+      if (
+        token.special ||
+        head.last.special ||
+        this.tokens.isUniform(token.index) ||
+        this.tokens.isUniformByChar(token.index - 1)
+      ) {
+        this.stack.splitLayer(token)
+        return
+      }
     }
 
-    if (this.tokens.isUniformByChar(x)) {
-      this.stack.addToken(tok)
-      return
+    this.stack.head.addToken(token)
+  }
+  
+  adjustRangeIfNeeded = (column) => {
+    if (column.some(tok => tok === null)) {
+      this.stack.head.range.decrement()
     }
-
-    if (tok.parent) {
-      lastTokenSet.reduceTokens(tok, this.tokens.matrix[x])
-      return
-    }
-
-    this.stack.addToken(tok, x)
   }
 
   tokenize () {
-    this.tokens.matrix.forEach((column, x) => {
-      column.filter(tok => tok).forEach((token, y) => {
-        if (token) {
-          this.tokenizeString(token, [x, y])
-        }
+    this.tokens.matrix.forEach(column => {
+      column.forEach((token, y) => {
+        if (token) this.tokenizeString(token)
       })
-      console.log(this.tokens.matrix)
-      if (this.tokens.matrix[x].some(tok => tok === null)) {
-        let lower = this.stack.getLastTokenSet().range.lower
-        this.stack.getLastTokenSet().range.lower = Math.max(lower - 1, 0)
-      }
+      this.adjustRangeIfNeeded(column)
     })
     return this
   }

@@ -1,5 +1,5 @@
 class Range {
-  constructor (lower, upper) {
+  constructor (lower = 1, upper = 1) {
     this._lower = lower
     this._upper = upper
   }
@@ -29,22 +29,32 @@ class Range {
     this._upper = upper
   }
 
+  increment () {
+    this._lower++
+    this._upper++
+  }
+
+  decrement () {
+    console.log('decrement', this)
+    this._lower = Math.max(this._lower - 1, 0)
+  }
+
   toString () {
     let lower = this._lower
     let upper = this._upper
-    if (upper === 1) {
-      if (!lower) {
+    switch (true) {
+      case upper > 50:
+      case upper > 6 && (upper / 2) > lower:
+        return '*'
+      case upper === 1 && !lower:
         return '?'
-      }
-      return ''
+      case upper === 1:
+        return ''
+      case upper === lower:
+        return `{${lower}}`
+      default:
+        return `{${lower},${upper}}`
     }
-    if (lower === upper) {
-      return `{${lower}}`
-    }
-    if (upper > 6 && (upper / 2) > lower) {
-      return '*'
-    }
-    return `{${lower},${upper}}`
   }
 }
 
