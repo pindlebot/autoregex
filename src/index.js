@@ -3,11 +3,25 @@ const Layer = require('./Layer')
 const Token = require('./Token')
 const Matrix = require('./Matrix')
 
+const normalize = dataset => {
+  if (typeof dataset === 'undefined') {
+    throw new Error('Must instantiate class with an array of strings')
+  }
+  if (!Array.isArray(dataset)) {
+    if (typeof dataset === 'object') {
+      dataset = Object.keys(dataset).map(key => dataset[key])
+    }
+    if (typeof dataset === 'string') {
+      dataset = [dataset]
+    }
+  }
+  return Array.from(new Set(dataset))
+}
+
 class Autoregex {
   constructor (dataset) {
-    dataset = Array.from(new Set(dataset))
     this.dataset = dataset
-    this.tokens = new Matrix(dataset)
+    this.tokens = new Matrix(normalize(dataset))
     this.stack = new Stack(this.tokens)
   }
 

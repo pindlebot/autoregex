@@ -7,13 +7,16 @@ import {
   convertToRaw,
   SelectionState,
   Modifier,
-  ContentState
+  ContentState,
+  convertFromRaw,
 } from 'draft-js'
+import { Map } from 'immutable'
 import ReverseRegex from '../src'
 import classnames from 'classnames'
 import { expand } from 'draft-js-compact'
 import { instanceOfContentBlock } from 'draft-js-compact/lib/util';
-import { removeInlineStyle, selectBlock } from 'draft-js-blocks'
+import { removeInlineStyle, selectBlock, insertBlocks } from 'draft-js-blocks'
+import './style.scss'
 
 class PlaygroundEditor extends React.Component {
   componentDidMount () {
@@ -41,23 +44,35 @@ const PlayButton = props => (
   </div>
 )
 
+
 const getTextArray = (editorState) => {
   return editorState.getCurrentContent()
     .getPlainText('\n')
-    .split('\n')
+    .split(/\r\n|\n|\r/gm)
+}
+
+const CUSTOM_STYLE_MAP = {
+  'success': {
+    backgroundColor: '#CCFCCB'
+  },
+  'fail': {
+    backgroundColor: '#F5B7BB'
+  }
 }
 
 class App extends React.Component {
   state = {
     editorState: EditorState.createEmpty(),
     results: EditorState.createEmpty(),
-    regex: ''
+    regex: '',
+    customStyleMap: CUSTOM_STYLE_MAP,
+    highlights: false
   }
   onChange = editorState => {
     this.setState({ editorState })
   }
 
-  handlePlay = evt => {
+  handlePlay = async evt => {
     this.convertToData()
   }
 
@@ -66,35 +81,28 @@ class App extends React.Component {
     let currentContent = editorState.getCurrentContent()
     let blocks = currentContent.getBlockMap().toArray()
     let contentState = results.reduce((acc, { result, index }) =>
-      Modifier.applyInlineStyle(
+      Modifier.setBlockData(
         acc,
         selectBlock(blocks[index]),
-        result.toString().toUpperCase()
+        Map({ result })
       ),
       currentContent
     )
     let nextEditorState = EditorState.push(
       editorState,
       contentState,
-      'change-inline-style'
+      'change-block-data'
     )
     return nextEditorState
   }
 
-  clearHighlights = () => {
-    if (!this.state.highlights) return
-    let { editorState } = this.state
-    let nextEditorState = ['TRUE', 'FALSE'].reduce((acc, style) => 
-      removeInlineStyle(acc, style, editorState.getCurrentContent().getBlockMap())
-    , editorState)
-    this.setState({
-      editorState: nextEditorState,
-      highlights: false
-    })
-  }
-
   onFocus = evt => {
-    this.clearHighlights()
+    this.setState(prevState => {
+      if (prevState.highlights) {
+        return { highlights: false }
+      }
+      return null
+    })
   }
 
   convertToData = () => {
@@ -102,12 +110,48 @@ class App extends React.Component {
     let lines = getTextArray(editorState)
     if (!lines.length) return
     let { re, results } = new ReverseRegex(lines).tokenize().test()
+    console.log({ re, results, lines })
     let nextEditorState = this.applyHighlights(results)
     this.setState({
       regex: re.toString(),
       editorState: nextEditorState,
       highlights: true
     })
+  }
+
+  blockStyleFn = contentBlock => {
+    let result = contentBlock.getData().get('result')
+    console.log({ result })
+    if (this.state.highlights) {
+      if (result) {
+        return 'success'
+      } else {
+        return 'fail'
+      }
+    }
+    return ''
+  }
+
+  onPaste = (text, html, editorState) => {
+    let currentContent = editorState.getCurrentContent()
+    let blocks = text.split(/\r\n|\n|\r/gm).filter(text => text !== '')
+    console.log({ blocks })
+    let raw = expand({ blocks: blocks })
+    console.log({ raw })
+    let contentState = convertFromRaw(raw)
+    let newContentState = Modifier.replaceWithFragment(
+      editorState.getCurrentContent(),
+      editorState.getSelection(),
+      contentState.getBlockMap()
+    )
+
+    let newEditorState = EditorState.push(
+      editorState,
+      newContentState,
+      'insert-fragment'
+    )
+    this.setState({ editorState: newEditorState })
+    return 'handled'
   }
 
   render () {
@@ -119,25 +163,28 @@ class App extends React.Component {
     )
     return (
       <main>
+        <div className='background'></div>
         <header>
-          <div className={className}>{this.state.regex}</div>
-          <PlayButton onClick={this.handlePlay} />
+          <div className={'upper'}>
+            <div className={className}>{this.state.regex}</div>
+          </div>
+          <div className={'lower'}>
+            <PlayButton onClick={this.handlePlay} />
+            <div className='shadow'></div>
+          </div>
         </header>
         <div className='container'>
           <section>
-            <PlaygroundEditor
-              editorState={this.state.editorState}
-              onChange={this.onChange}
-              onFocus={this.onFocus}
-              customStyleMap={{
-                'TRUE': {
-                  backgroundColor: '#CCFCCB'
-                },
-                'FALSE': {
-                  backgroundColor: '#F5B7BB'
-                }
-              }}
-            />
+            <div className='playground-editor'>
+              <PlaygroundEditor
+                editorState={this.state.editorState}
+                onChange={this.onChange}
+                onFocus={this.onFocus}
+                handlePastedText={this.onPaste}
+                customStyleMap={this.state.customStyleMap}
+                blockStyleFn={this.blockStyleFn}
+              />
+            </div>
           </section>
           <section className={'read-only'}>
             <PlaygroundEditor

@@ -1,0 +1,154 @@
+@for $i from 1 through 30 {
+    .notranslate.public-DraftEditor-content > div > div:nth-child(#{$i}):before {
+        content: "#{$i}";
+        margin-left: -30px;
+        position: absolute;
+        color: #D1CCDC;
+    }
+}
+
+.success {
+  background-color: #CCFCCB
+}
+
+.fail {
+  background-Color: #F5B7BB
+}
+
+.playground-editor {
+  border-left: 1px solid #F2F1F5;
+  padding: 14px;
+  height: 100%;
+}
+
+.upper, .lower {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-basis: 60px;
+  width: 100%;
+}
+/* https://coolors.co/090c08-172a3a-ff01fb-e63946-ccfccb */
+body {
+    margin: 0;
+    background: #FAFAFB;
+    color: #172A3A;
+    font-family: -apple-system,BlinkMacSystemFont,segoe ui,roboto,oxygen,ubuntu,cantarell,fira sans,droid sans,helvetica neue,sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+main {
+    min-height: 100vh;
+    position: relative;
+}
+
+.background {
+  background-image: linear-gradient(to right, #243949 0%, #517fa4 100%);
+  position: absolute;
+  height: 160px;
+  width: 100%;
+  z-index: 10;
+}
+
+header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 150px;
+    padding: 30px 0 0 0;
+    box-sizing: border-box;
+}
+
+.container {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    max-width: 960px;
+    padding: 0 1em 1em 1em;
+    box-sizing: border-box;
+    min-height: 100vh;
+}
+
+section {
+    background-color: #fff;
+    padding: 2em 1em;
+    box-sizing: border-box;
+}
+
+section.read-only {
+    background-color: transparent;
+}
+
+.container section:nth-child(1) {
+  padding: 0 0 0 24px;
+}
+
+section, article {
+    min-height: 100vh;
+    flex-basis: 50%;
+}
+
+.execute-button-wrap {
+  z-index: 20;
+  cursor: pointer;
+  transform: translateY(30px);
+}
+
+.execute-button {
+  background-color: #fff;
+  border: 6px solid #FF01FB;
+  width: 70px;
+  height: 70px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+
+.shadow {
+  width: 70px;
+  height: 70px;
+  z-index: 5;
+  border-radius: 50%;
+  position: absolute;
+  transform: scale(1.1) translateY(30px);
+  background-color:#FAFAFB;
+}
+.execute {
+  transform: translateY(30px);
+}
+.execute-button svg {
+  fill: #FF01FB;
+}
+
+.result {
+  color: #fff;
+  font-size: 24px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  padding: 6px 12px;
+  max-height: 50px;
+  z-index: 20;
+}
+
+.result.active {
+    background-color: #517fa4;
+}
+
+.DraftEditor-root {
+    font-family: cousine,sfmono-regular,Consolas,Menlo,liberation mono,ubuntu mono,Courier,monospace;
+    color: #111;
+    max-height: auto;
+    padding: 0;
+    background: 0 0;
+    overflow: visible;
+    font-size: 1em;
+}
