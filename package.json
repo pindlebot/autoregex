@@ -6,7 +6,7 @@
     "lint": "standard src/*.js --fix | snazzy",
     "dev": "parcel playground/index.html",
     "build": "parcel build playground/index.html --public-url \"/staging/\"",
-    "test": "jest",
+    "test": "jest --verbose",
     "clean": "rimraf dist && rimraf .cache"
   },
   "standard": {

@@ -3,7 +3,6 @@ const { TOKENS, SPECIAL } = require('./fixtures')
 const ALL_TOKENS = TOKENS.map((tok, index) =>
   new RegExp(...(Array.isArray(tok) ? tok : [tok]))
 )
-window.__tokens__ = ALL_TOKENS
 
 const getParent = (token) => {
   if (!token.char) return null
@@ -30,11 +29,15 @@ class Token {
       : regex
     let tok = typeof regex === 'string'
       ? regex
-      : regex.toString().split('/')[1]
+      : regex.toString().slice(1, regex.toString().length - 1)
+    let flags = typeof regex === 'string' ? ''
+      : re.flags
     this.regex = re
     this.token = tok
     this._isRange = tok.startsWith('[') && tok.endsWith(']')
     this._displacement = displacement
+    this.flags = flags
+    this._special = false
   }
 
   set special (special) {

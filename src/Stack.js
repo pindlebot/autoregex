@@ -4,7 +4,6 @@ const Token = require('./Token')
 class Stack {
   constructor (matrix) {
     this._stack = []
-    this._x = 0
     this.matrix = matrix
   }
 
@@ -19,7 +18,6 @@ class Stack {
   }
 
   value () {
-    console.log(this)
     let re = this._stack.map(layer => layer.value()).join('')
     return new RegExp(`^${re}$`)
   }

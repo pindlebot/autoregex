@@ -1,4 +1,14 @@
 const Autoregex = require('../src')
+const uuid = require('uuid/v4')
+
+function randomHex () {
+  const c = Math.floor(Math.random() * 0x1000000);
+  return '#' + ('000000' + c.toString(16)).substr(-6)
+}
+
+function randomId () {
+  return Math.max(Math.floor(Math.random() * 100000), 10000)
+}
 
 const datasets = [{
   input: [
@@ -17,7 +27,7 @@ const datasets = [{
   output: '/^[\\d]{2,3}$/'
 }, {
   input: ['!', '1', 'a', '-', '11'],
-  output: '/^[1!A-Za-z\\-]{1,2}$/'
+  output: '/^[A-Za-z\\-1!]{1,2}$/'
 }, {
   input: ['aa', 'aaa', 'aaaa'],
   output: '/^[a]{2,4}$/'
@@ -34,28 +44,62 @@ const datasets = [{
     '1abcdef',
     '^'
   ],
-  output: '/^[!\\*\\d\\^][A-Za-z]{0,6}$/'
+  output: '/^[A-Za-z\\*\\d\\^!]*$/'
 }, {
   input: [
     '******',
     'abcabc',
     'defdef'
   ],
-  output: '/^[\\*A-Za-z]{6}$/'
+  output: '/^[A-Za-z\\*]{6}$/'
 }, {
   input: [
     'o888',
     'o887',
     'oh&&'
   ],
+  output: '/^o[A-Za-z\\d&]{3}$/'
+}, {
+  input: Array.from(new Array(20).keys()).map(() => uuid()),
+  output: '/^[A-Za-z\\d]{8}\\-[A-Za-z\\d]{4}\\-4[A-Za-z\\d]{3}\\-[A-Za-z\\d]{4}\\-[A-Za-z\\d]{12}$/'
+}, {
+  input: Array.from(new Array(20).keys()).map(() => randomHex()),
+  output: '/^#[A-Za-z\\d]{6}$/'
+}, {
+  input: Array.from(new Array(5).keys()).map(() => 'https://stackoverflow.com/questions/' + randomId()),
+  output: '/^h[t]{2}ps:[\\/]{2}stackoverflow\\.com\\/questions\\/[\\d]{5}$/'
+}, {
+  input: [
+    'abc$$$111+++',
+    'def%%%222---',
+    'ghi$$$333]]]',
+    'xyz%%%444[[['
+  ],
   output: ''
+}, {
+  input: [
+    'email@example.com',
+    'firstname.lastname@example.com',
+    'email@subdomain.example.com',
+    'firstname+lastname@example.com',
+    'email@123.123.123.123',
+    'email@[123.123.123.123]',
+    '"email"@example.com',
+    '1234567890@example.com',
+    'email@example-one.com',
+    '_______@example.com',
+    'email@example.name',
+    'email@example.museum',
+    'email@example.co.jp',
+    'firstname-lastname@example.com'
+  ],
+  output: '/^[A-Za-z\\d\\["_@]{9}[A-Za-z\\-\\+\\.\\d\\]@]*$/'
 }]
 
 datasets.forEach((dataset, i) => {
-  it(`${JSON.stringify(dataset[i])}`, () => {
-    let re = new Autoregex(datasets[i].input).tokenize().value()
-    console.log(re)
-    expect(re.toString()).toMatch(datasets[i].output)
+  it('Autoregex - ' + dataset.input.join(', '), () => {
+    let re = new Autoregex(dataset.input).tokenize().value()
+    expect(re.toString()).toMatch(dataset.output)
   })
 })
 

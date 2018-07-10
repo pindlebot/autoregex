@@ -48,4 +48,3 @@ const _fixtures = [
 	'http://abc.com'
 ];
 let results = new Autoregex(_fixtures).tokenize().test([])
-console.log(results)

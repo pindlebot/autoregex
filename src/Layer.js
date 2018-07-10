@@ -24,19 +24,15 @@ class Layer {
     return this._index
   }
 
-  get tokens () {
+  getTokens () {
     return this._tokens
   }
 
-  get length () {
+  getLength () {
     return this._tokens.size
   }
 
-  get first () {
-    return Array.from(this._tokens)[0]
-  }
-
-  get last () {
+  getCurrentToken() {
     return Array.from(this._tokens)[this._tokens.size - 1]
   }
 
@@ -58,7 +54,7 @@ class Layer {
       .some((tok) => tok.token === token.token || tok.token === '.')
   }
 
-  has (token) {
+  hasToken (token) {
     return this.includes(token)
   }
 
@@ -67,7 +63,7 @@ class Layer {
   }
 
   addNumberToken (tok) {
-    this.collapse(tok.parent)
+    this.collapseLayer(tok.parent)
     let nums = this.column.filter(t => !isNaN(1)).map(t => parseInt(t.char))
     let min = Math.min(...nums)
     let max = Math.max(...nums)
@@ -81,47 +77,57 @@ class Layer {
     this.add(tok.parent)
   }
 
-  collapse (parent) {
-    Array.from(this._tokens)
-      .filter(token => token.parent && token.parent.token === parent.token)
-      .forEach(token => {
-        console.warn(`Removing ${token.tok}`)
-        this.remove(token)
-      })
+  removeSiblingsIfNeeded (token) {
+    let { parent } = token
+    if (parent) {
+      Array.from(this._tokens)
+        .filter(token => token.parent && token.parent.token === parent.token)
+        .forEach(tok => {
+          this.remove(tok)
+        })
+      parent.index = token.displacement
+      this.add(parent)
+      return null
+    }
+    return token
   }
 
   addToken (token) {
+    // if we've moved to a new index in the string, increment the range.
+    // e.g., [A-Za-z]{3} => [A-Za-z]{4}
     if (token.displacement !== this.index) {
       //  we're on a new column, so extend the range
       this.range.increment()
       this._index = token.displacement
     }
-    const { parent } = token
 
-    if (this.includes(token) || this.includes(parent)) {
-      console.warn('Not adding ' + token.token)
+    if (this._tokens.size > 4) {
+      // console.log('replacing',this._tokens)
+      // this._tokens = new Set([Token.create('.', token.displacement)])
+      // return
+    }
+    // if the token is already present in the set, forego adding it again
+    if (this.hasToken(token) || this.hasToken(token.parent)) {
       return
     }
+    // convert [abc] to [A-Za-z]+
+    token = this.removeSiblingsIfNeeded(token)
 
-    if (parent) {
-      this.collapse(parent)
-      parent.index = token.displacement
-      this.add(parent)
-      return
+    // finally add the token
+    if (token) {
+      this.add(token)
     }
-
-    this.add(token)
   }
 
   value () {
-    let tokens = Array.from(this._tokens)
+    let tokens = Array.from(this._tokens).sort((a,b) => b.token.length - a.token.length)
     let token = tokens.map(extract).join('')
     let range = this._range.toString(this._tokens)
-    if (this.length === 1) {
+    if (this.getLength() === 1) {
       if (!tokens.some(tok => tok.isRange())) {
-        if (tokens[0].token === '.') {
-          return token
-        }
+        // if (tokens[0].token === '.') {
+        //  return token
+        // }
         if (this.range.upper === 1 && this.range.lower === 1) {
           return token
         }

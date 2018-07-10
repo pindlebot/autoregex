@@ -47,8 +47,12 @@ class Autoregex {
         currentLayer.index = token.displacement
         return
       }
+      let isSpecial = token.isSpecialCharacter()
+      // let isNextSpecial = (token.displacement + 1 < this.tokens.maxSize) &&
+      //  this.tokens.matrix[token.displacement + 1]
+      //    .some(tok => tok && tok.isSpecialCharacter())  
       if (
-        (token.isSpecialCharacter() || currentLayer.last.isSpecialCharacter()) ||
+        (isSpecial) ||
         this.tokens.isUniform(token.displacement) ||
         this.tokens.isUniformByChar(token.displacement - 1)
       ) {

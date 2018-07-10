@@ -1,7 +1,6 @@
 const Token = require('./Token')
 
-const createMatrix = (dataset) => {
-  let size = dataset.sort((a, b) => b.length - a.length)[0].length
+const createMatrix = (dataset, size) => {
   return Array.from(new Array(size).keys()).map(i =>
     dataset.map(str =>
       str.charAt(i) ? str.charAt(i) : null
@@ -14,8 +13,11 @@ const createMatrix = (dataset) => {
 
 class Matrix {
   constructor (dataset) {
+    let size = dataset.sort((a, b) => b.length - a.length)[0].length
+
     this._dataset = dataset
-    this._matrix = createMatrix(dataset)
+    this._matrix = createMatrix(dataset, size)
+    this.maxSize = size
   }
 
   get length () {
@@ -61,10 +63,6 @@ class Matrix {
       }
       return acc
     }, [])
-  }
-
-  hasRepeats (x, y) {
-    return this.isUniformByChar(x)
   }
 
   isHeterogeneous (x) {
