@@ -1,4 +1,5 @@
 const Token = require('./Token')
+const takeWhile = require('lodash.takewhile')
 
 const createMatrix = (dataset, size) => {
   return Array.from(new Array(size).keys()).map(i =>

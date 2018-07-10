@@ -101,11 +101,12 @@ class Layer {
       this._index = token.displacement
     }
 
-    if (this._tokens.size > 4) {
+    // if (this._tokens.size > 4) {
       // console.log('replacing',this._tokens)
       // this._tokens = new Set([Token.create('.', token.displacement)])
       // return
-    }
+    // }
+
     // if the token is already present in the set, forego adding it again
     if (this.hasToken(token) || this.hasToken(token.parent)) {
       return

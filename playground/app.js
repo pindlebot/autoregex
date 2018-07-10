@@ -110,7 +110,6 @@ class App extends React.Component {
     let lines = getTextArray(editorState)
     if (!lines.length) return
     let { re, results } = new ReverseRegex(lines).tokenize().test()
-    console.log({ re, results, lines })
     let nextEditorState = this.applyHighlights(results)
     this.setState({
       regex: re.toString(),
@@ -121,7 +120,6 @@ class App extends React.Component {
 
   blockStyleFn = contentBlock => {
     let result = contentBlock.getData().get('result')
-    console.log({ result })
     if (this.state.highlights) {
       if (result) {
         return 'success'
@@ -135,9 +133,7 @@ class App extends React.Component {
   onPaste = (text, html, editorState) => {
     let currentContent = editorState.getCurrentContent()
     let blocks = text.split(/\r\n|\n|\r/gm).filter(text => text !== '')
-    console.log({ blocks })
     let raw = expand({ blocks: blocks })
-    console.log({ raw })
     let contentState = convertFromRaw(raw)
     let newContentState = Modifier.replaceWithFragment(
       editorState.getCurrentContent(),

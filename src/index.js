@@ -39,14 +39,13 @@ class Autoregex {
     return { results, re }
   }
 
-  tokenizeString (token) {
+  tokenizeString (token, column) {
     let currentLayer = this.stack.getCurrentLayer()
-
+  
     if (!currentLayer) {
       this.stack.push(token)
       return
-    }  
-
+    }   
     if (token.displacement !== currentLayer.index) {
       // if (currentLayer.last.tok === '.') {
       //  this.stack.splitLayer(token)
@@ -61,12 +60,13 @@ class Autoregex {
         currentLayer.index = token.displacement
         return
       }
-      let isSpecial = token.isSpecialCharacter()
+      let isSpecial = token.isSpecialCharacter() || column.some(tok => tok && tok.isSpecialCharacter())
+
       // let isNextSpecial = (token.displacement + 1 < this.tokens.maxSize) &&
       //  this.tokens.matrix[token.displacement + 1]
       //    .some(tok => tok && tok.isSpecialCharacter())  
       if (
-        (isSpecial) ||
+        isSpecial ||
         this.tokens.isUniform(token.displacement) ||
         this.tokens.isUniformByChar(token.displacement - 1)
       ) {
@@ -85,9 +85,11 @@ class Autoregex {
   }
 
   tokenize () {
-    this.tokens.matrix.forEach(column => {
+    let { matrix } = this.tokens
+
+    matrix.forEach(column => {
       column.forEach(token => {
-        if (token) this.tokenizeString(token)
+        if (token) this.tokenizeString(token, column)
       })
       this.adjustRangeIfNeeded(column)
     })
