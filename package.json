@@ -1,8 +1,6 @@
 {
   "name": "autoregex",
-  "dependencies": {
-    "lodash.takewhile": "^4.6.0"
-  },
+  "dependencies": {},
   "scripts": {
     "lint": "standard src/*.js --fix | snazzy",
     "dev": "parcel playground/index.html",

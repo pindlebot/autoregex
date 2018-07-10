@@ -62,7 +62,24 @@ const CUSTOM_STYLE_MAP = {
 
 class App extends React.Component {
   state = {
-    editorState: EditorState.createEmpty(),
+    editorState: EditorState.createWithContent(
+      convertFromRaw(
+        expand({
+          blocks: [
+            '99501',
+            '99503',
+            '99615',
+            '99654',
+            '99701',
+            '99801',
+            '99502',
+            '99504',
+            '99507',
+            '99508'
+          ]
+        })
+      )
+    )
     results: EditorState.createEmpty(),
     regex: '',
     customStyleMap: CUSTOM_STYLE_MAP,
